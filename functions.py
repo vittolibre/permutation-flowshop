@@ -3,48 +3,31 @@ import random
 import time
 import numpy as np
 
-def get_makespan(num_machines, seq, data):
-    costs = np.zeros((num_machines, len(seq)), dtype=object)
-    costs[0][0] = (0, data[0][seq[0]])
-    for machine in range(1, num_machines):
-        s_t = costs[machine-1][0][1]
-        e_t = s_t + data[machine][0]
-        costs[machine][0] = (s_t, e_t)
-    if len(seq) > 1:
-        for i, job_id in enumerate(seq[1::]):
-            s_t = costs[0][i][1]
-            e_t = s_t + data[0][job_id]
-            costs[0][i+1] = (s_t, e_t)
-            for machine in range(1, num_machines):
-                s_t = max(costs[machine][i][1], costs[machine-1][i+1][1])
-                e_t = s_t + data[machine][job_id]
-                costs[machine][i+1] = (s_t, e_t)
-    return costs[num_machines-1][-1][1]
-
 
 def calc_makespan(sequence, proccessing_time, number_of_jobs, number_of_machines):
    
-    cost = [0] * number_of_jobs
+    completion_times = [0] * number_of_jobs  #tempi di completamento dei job; si aggiorna attraversando tutte le macchine 
 
     for machine_no in range(0, number_of_machines):
         for slot in range(number_of_jobs):
-            cost_so_far = cost[slot]
+            job_ct = completion_times[slot]
             if slot > 0:
-                cost_so_far = max(cost[slot - 1], cost[slot])
-            cost[slot] = cost_so_far + proccessing_time[sequence[slot]][machine_no]
-    return cost[number_of_jobs - 1]
+                job_ct = max(completion_times[slot - 1], completion_times[slot])
+            completion_times[slot] = job_ct + proccessing_time[sequence[slot]][machine_no]
+    return completion_times[number_of_jobs - 1]
 
+# inizializzazione popolazione
 def initialize_population(population_size, number_of_jobs):
     population = []
     i = 0
     while i < population_size:
         individual = list(np.random.permutation(number_of_jobs))
-        if individual not in population:
+        if individual not in population: #potrei generare più volte la stessa sequenza
             population.append(individual)
             i += 1
-
     return population
 
+# incrocio sequenze
 def crossover(parents):
     parent1 = parents[0]
     parent2 = parents[1]
@@ -59,7 +42,7 @@ def crossover(parents):
         if first_point <= index < second_point:
             child.extend(intersect)
             index = second_point
-        if parent2[pos2] not in intersect:
+        if parent2[pos2] not in intersect: #potrei avere 2 volte lo stesso job nella sequenza
                 child.append(parent2[pos2])
                 index += 1
 
